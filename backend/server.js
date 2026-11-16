@@ -171,7 +171,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'troque-este-segredo-em-producao',
   resave: false,
   saveUninitialized: false,
-  cookie: { httpOnly: true, sameSite: 'lax', maxAge: 1000 * 60 * 60 * 24 * 7 }
+  cookie: { httpOnly: true, secure: true, sameSite: 'none', maxAge: 1000 * 60 * 60 * 24 * 7 }
 }));
 
 function requireAuth(req, res, next) {
