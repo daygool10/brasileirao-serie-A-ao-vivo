@@ -1,7 +1,7 @@
 // Wrappers das chamadas à API Node/Express
 const API = (() => {
   async function call(path, opts = {}) {
-    const res = await fetch(`/api/${path}`, {
+    const res = await fetch(`https://brasileirao-serie-a-ao-vivo.onrender.com/api/${path}`, {
       method: opts.method || 'GET',
       credentials: 'same-origin',
       headers: opts.body ? { 'Content-Type': 'application/json' } : {},
