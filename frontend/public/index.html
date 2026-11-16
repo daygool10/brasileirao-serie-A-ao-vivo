@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brasileirão ao Vivo — Entrar</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/style-extra.css">
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="brand">
+        <span class="brand-mark">Brasileirão Série A</span>
+        <h1 class="brand-title">Ao Vivo</h1>
+        <p class="brand-sub">Resultados do seu time, rodada e tabela em tempo real.</p>
+      </div>
+
+      <form id="auth-form" autocomplete="off">
+        <div class="field">
+          <label for="username">Username</label>
+          <input id="username" type="text" required minlength="3" maxlength="60" autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="password">Senha</label>
+          <input id="password" type="password" required minlength="4" autocomplete="current-password">
+        </div>
+        <div class="field" id="team-field">
+          <label for="team-select">Qual é o seu time?</label>
+          <select id="team-select" required>
+            <option value="">Carregando times…</option>
+          </select>
+          <p class="field-hint" id="team-hint">Escolha o clube que você acompanha. Vamos destacar os jogos dele e a posição na tabela.</p>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="submit-btn">Entrar</button>
+        <p class="error-msg" id="err"></p>
+      </form>
+
+      <p class="auth-switch">
+        <span id="switch-text">Ainda não tem cadastro?</span>
+        <button id="switch-btn" type="button">Criar conta</button>
+      </p>
+    </div>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script>
+    let mode = 'login';
+    let teamsCache = [];
+    const form = document.getElementById('auth-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const switchBtn = document.getElementById('switch-btn');
+    const switchText = document.getElementById('switch-text');
+    const err = document.getElementById('err');
+    const teamField = document.getElementById('team-field');
+    const teamSelect = document.getElementById('team-select');
+
+    function applyMode() {
+      submitBtn.textContent = mode === 'login' ? 'Entrar' : 'Criar conta';
+      switchText.textContent = mode === 'login' ? 'Ainda não tem cadastro?' : 'Já tem uma conta?';
+      switchBtn.textContent  = mode === 'login' ? 'Criar conta' : 'Entrar';
+      // No login, o time vem do perfil; no cadastro, é obrigatório escolher.
+      teamField.style.display = mode === 'register' ? 'block' : 'none';
+      err.textContent = '';
+    }
+
+    async function loadTeams() {
+      try {
+        const r = await API.teams();
+        teamsCache = r.teams || [];
+        teamSelect.innerHTML = '<option value="">Selecione seu time…</option>' +
+          teamsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+      } catch (e) {
+        teamSelect.innerHTML = '<option value="">Não foi possível carregar os times</option>';
+        console.error(e);
+      }
+    }
+
+    switchBtn.addEventListener('click', () => { mode = mode === 'login' ? 'register' : 'login'; applyMode(); });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      err.textContent = '';
+      submitBtn.disabled = true;
+      const u = document.getElementById('username').value.trim();
+      const p = document.getElementById('password').value;
+      try {
+        if (mode === 'login') {
+          await API.login(u, p);
+        } else {
+          const selectedId = Number(teamSelect.value);
+          const team = teamsCache.find(t => t.id === selectedId);
+          if (!team) throw new Error('Escolha o seu time para continuar');
+          await API.register(u, p, { id: team.id, name: team.name, crest: team.crest });
+        }
+        location.href = 'app.html';
+      } catch (e) {
+        err.textContent = e.message;
+        submitBtn.disabled = false;
+      }
+    });
+
+    applyMode();
+    loadTeams();
+
+    API.session().then(s => { if (s.logged) location.href = 'app.html'; }).catch(()=>{});
+  </script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brasileirão ao Vivo</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/style-extra.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-logo">Brasileirão ao Vivo</div>
+    <nav class="nav" id="nav">
+      <button data-tab="meu-time" class="active">Meu time</button>
+      <button data-tab="ao-vivo">Ao vivo</button>
+      <button data-tab="rodada">Rodada</button>
+      <button data-tab="tabela">Tabela</button>
+    </nav>
+    <div class="user-menu" id="user-menu">
+      <button class="btn" id="user-btn">
+        <span id="user-team-crest"></span>
+        <span id="user-name">…</span> ▾
+      </button>
+      <div class="user-dropdown">
+        <button id="btn-change-team">⚽ Trocar meu time</button>
+        <button id="btn-logout">↪ Sair</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="loading">Carregando…</div>
+  </main>
+
+  <div class="status-bar" id="status-bar">
+    <span class="dot" id="live-dot"></span>
+    <span id="status-text">Atualizado agora</span>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal-backdrop" id="modal">
+    <div class="modal">
+      <button class="btn modal-close" id="modal-close">Fechar</button>
+      <h2>Trocar meu time</h2>
+      <p class="page-sub">Selecione o clube que você acompanha.</p>
+      <select id="modal-team-select" class="input"></select>
+      <button class="btn btn-primary btn-block" id="modal-team-save" style="margin-top:16px">Salvar</button>
+    </div>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+# Define os serviços (containers) que compõem a aplicação.
+services:
+
+  # ---------- Banco de dados PostgreSQL ----------
+  db:
+    image: postgres:16-alpine          # Imagem oficial do Postgres 16, variante Alpine (leve).
+    container_name: copa-db            # Nome fixo do container (facilita logs/exec).
+    restart: unless-stopped            # Reinicia sozinho, exceto se for parado manualmente.
+    environment:                       # Variáveis lidas pela imagem do Postgres no 1º start.
+      POSTGRES_USER: ${DB_USER:-copa}            # Usuário do banco (default: copa).
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-copa}    # Senha do usuário (default: copa).
+      POSTGRES_DB: ${DB_NAME:-copa}              # Banco criado automaticamente.
+    volumes:
+      - db-data:/var/lib/postgresql/data   # Volume nomeado: persiste os dados fora do container.
+    healthcheck:                       # Verifica se o Postgres está pronto para aceitar conexões.
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-copa} -d ${DB_NAME:-copa}"]
+      interval: 5s                     # Checa a cada 5s.
+      timeout: 3s                      # Falha se demorar mais que 3s.
+      retries: 10                      # Tenta 10 vezes antes de marcar como unhealthy.
+    networks: [appnet]                 # Conecta na rede interna da aplicação.
+
+  # ---------- Backend (API Node.js) ----------
+  backend:
+    build: ./backend                   # Faz build da imagem usando ./backend/Dockerfile.
+    container_name: copa-backend
+    restart: unless-stopped
+    environment:                       # Configurações lidas pelo server.js.
+      PORT: 3000                       # Porta interna onde a API escuta.
+      DB_HOST: db                      # Hostname = nome do serviço do Postgres (resolvido pela rede Docker).
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-copa}
+      DB_PASSWORD: ${DB_PASSWORD:-copa}
+      DB_NAME: ${DB_NAME:-copa}
+      SESSION_SECRET: ${SESSION_SECRET:-troque-este-segredo}  # Chave de sessão (TROCAR em produção!).
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:8080} # Origem permitida no CORS.
+      FOOTBALL_API_TOKEN: ${FOOTBALL_API_TOKEN:-}   # Token da football-data.org (deixe vazio p/ mock).
+      COMPETITION_CODE: ${COMPETITION_CODE:-BSA}    # BSA = Brasileirão Série A.
+      CACHE_TTL_MS: ${CACHE_TTL_MS:-30000}          # Cache dos dados em ms.
+    depends_on:
+      db:
+        condition: service_healthy     # Só sobe depois que o healthcheck do db passar.
+    networks: [appnet]
+    # Observação: não expõe portas no host — só é acessível via rede interna (pelo frontend/nginx).
+
+  # ---------- Frontend (Nginx servindo estáticos + proxy) ----------
+  frontend:
+    build: ./frontend                  # Build a partir de ./frontend/Dockerfile (Nginx + arquivos estáticos).
+    container_name: copa-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"    # Mapeia porta do host (default 8080) → 80 do container.
+    depends_on:
+      - backend                        # Espera o backend iniciar (não checa health, só ordem).
+    networks: [appnet]
+
+# Volumes nomeados gerenciados pelo Docker (sobrevivem a `docker compose down`).
+volumes:
+  db-data:                             # Dados persistentes do Postgres.
+
+# Rede interna isolada para comunicação entre os serviços por nome (db, backend, frontend).
+networks:
+  appnet:
+    driver: bridge                     # Driver padrão para redes locais.
