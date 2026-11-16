@@ -129,6 +129,7 @@ const pool = new Pool({
   user: process.env.DB_USER || 'copa',
   password: process.env.DB_PASSWORD || 'copa',
   database: process.env.DB_NAME || 'copa',
+  ssl: process.env.DB_HOST.includes('render.com') ? { rejectUnauthorized: false } : false,
 });
 
 async function initDb() {
