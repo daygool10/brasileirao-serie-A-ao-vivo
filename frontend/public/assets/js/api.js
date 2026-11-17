@@ -3,7 +3,7 @@ const API = (() => {
   async function call(path, opts = {}) {
     const res = await fetch(`https://brasileirao-serie-a-ao-vivo.onrender.com/api/${path}`, {
       method: opts.method || 'GET',
-      credentials: 'same-origin',
+      credentials: 'include',
       headers: opts.body ? { 'Content-Type': 'application/json' } : {},
       body: opts.body ? JSON.stringify(opts.body) : undefined
     });
