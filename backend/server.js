@@ -177,7 +177,11 @@ app.use(cors({
   credentials: true,
 }));
 
-const isProd = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+const isProd =
+  process.env.NODE_ENV === 'production' ||
+  process.env.RENDER === 'true' ||
+  !!process.env.RENDER_EXTERNAL_URL ||
+  (process.env.DB_HOST || '').includes('render.com');
 app.set('trust proxy', 1);
 app.use(session({
   store: new PgSession({ pool, tableName: 'session' }),
