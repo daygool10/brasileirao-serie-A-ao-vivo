@@ -339,6 +339,20 @@ app.get('/api/matches', requireAuth, async (req, res) => {
 
 app.get('/api/health', (req, res) => res.json({ ok: true, provider: FOOTBALL_API_TOKEN ? 'football-data.org' : 'mock' }));
 
+// Diagnóstico: prova qual versão do código está em execução.
+app.get('/api/version', (req, res) => res.json({
+  version: 'v2-cross-domain-cookies',
+  node: process.version,
+  isProd: isProd,
+  corsOrigins: allowedOrigins,
+  cookieConfig: { secure: isProd, sameSite: isProd ? 'none' : 'lax' },
+  render: {
+    RENDER: process.env.RENDER || null,
+    RENDER_EXTERNAL_URL: process.env.RENDER_EXTERNAL_URL || null,
+    NODE_ENV: process.env.NODE_ENV || null,
+  },
+}));
+
 initDb().then(() => {
   app.listen(PORT, () => console.log(`Backend em http://localhost:${PORT}`));
 }).catch(e => { console.error('Falha ao iniciar DB', e); process.exit(1); });
