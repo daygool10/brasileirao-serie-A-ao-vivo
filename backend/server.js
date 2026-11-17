@@ -123,12 +123,14 @@ function mockFootball(path) {
 // ------------------------------------------------------------------
 // Banco
 // ------------------------------------------------------------------
+const isRender = (process.env.DB_HOST || '').includes('render.com');
 const pool = new Pool({
   host: process.env.DB_HOST || 'db',
   port: Number(process.env.DB_PORT || 5432),
   user: process.env.DB_USER || 'copa',
   password: process.env.DB_PASSWORD || 'copa',
   database: process.env.DB_NAME || 'copa',
+  ssl: isRender ? { rejectUnauthorized: false } : false,
 });
 
 async function initDb() {
@@ -162,15 +164,32 @@ async function initDb() {
 const app = express();
 app.use(express.json({ limit: '256kb' }));
 
-const ORIGIN = process.env.FRONTEND_ORIGIN || true;
-app.use(cors({ origin: ORIGIN, credentials: true }));
+// CORS: aceita lista de origens (separadas por vírgula) ou '*'.
+const rawOrigins = (process.env.FRONTEND_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean);
+const allowedOrigins = rawOrigins.length ? rawOrigins : ['*'];
+app.use(cors({
+  origin: (origin, cb) => {
+    // Permite requisições sem Origin (ex: curl) e origens da whitelist.
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error(`Origem bloqueada pelo CORS: ${origin}`));
+  },
+  credentials: true,
+}));
 
+const isProd = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+app.set('trust proxy', 1);
 app.use(session({
   store: new PgSession({ pool, tableName: 'session' }),
   secret: process.env.SESSION_SECRET || 'troque-este-segredo-em-producao',
   resave: false,
   saveUninitialized: false,
-  cookie: { httpOnly: true, sameSite: 'lax', maxAge: 1000 * 60 * 60 * 24 * 7 }
+  cookie: {
+    httpOnly: true,
+    secure: isProd,          // HTTPS obrigatório em prod (Render)
+    sameSite: isProd ? 'none' : 'lax', // 'none' permite cross-domain (GitHub Pages -> Render)
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+  }
 }));
 
 function requireAuth(req, res, next) {

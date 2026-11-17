@@ -93,9 +93,10 @@
           if (!team) throw new Error('Escolha o seu time para continuar');
           await API.register(u, p, { id: team.id, name: team.name, crest: team.crest });
         }
-        location.href = 'app.html';
+        window.location.replace('app.html');
       } catch (e) {
-        err.textContent = e.message;
+        console.error(e);
+        err.textContent = e.message || 'Erro ao conectar com o servidor. Tente novamente.';
         submitBtn.disabled = false;
       }
     });
